@@ -7,13 +7,9 @@ app.get("/download", async (req, res) => {
   res.setHeader("Content-Type", "application/zip");
   res.setHeader("Content-Disposition", "attachment; filename=files.zip");
 
-  const archive = archiver("zip", {
-    zlib: { level: 9 },
-  });
-
+  const archive = archiver("zip", { zlib: { level: 9 } });
   archive.pipe(res);
 
-  // Replace with your actual file URLs or data
   const fileUrls = [
     "https://upload.wikimedia.org/wikipedia/commons/a/a7/Blank_image.jpg",
     "https://www.africau.edu/images/default/sample.pdf"
@@ -21,7 +17,8 @@ app.get("/download", async (req, res) => {
 
   for (let i = 0; i < fileUrls.length; i++) {
     const response = await fetch(fileUrls[i]);
-    const buffer = await response.buffer();
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
     archive.append(buffer, { name: `file${i + 1}${getExtension(fileUrls[i])}` });
   }
 
