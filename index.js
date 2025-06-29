@@ -1,27 +1,35 @@
 const express = require("express");
 const archiver = require("archiver");
-const fetch = require("node-fetch"); // ✅ FIX HERE
+const fetch = require("node-fetch"); // make sure this is installed
+const bodyParser = require("body-parser");
 
 const app = express();
 const port = process.env.PORT || 10000;
 
-app.get("/download", async (req, res) => {
+app.use(bodyParser.json());
+
+app.post("/download", async (req, res) => {
+  const fileUrls = req.body.urls;
+
+  if (!fileUrls || !Array.isArray(fileUrls)) {
+    return res.status(400).send("Invalid 'urls' array");
+  }
+
   res.setHeader("Content-Type", "application/zip");
   res.setHeader("Content-Disposition", "attachment; filename=files.zip");
 
   const archive = archiver("zip", { zlib: { level: 9 } });
   archive.pipe(res);
 
-  const fileUrls = [
-    "https://upload.wikimedia.org/wikipedia/commons/a/a7/Blank_image.jpg",
-    "https://www.africau.edu/images/default/sample.pdf"
-  ];
-
   for (let i = 0; i < fileUrls.length; i++) {
-    const response = await fetch(fileUrls[i]);
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    archive.append(buffer, { name: `file${i + 1}${getExtension(fileUrls[i])}` });
+    try {
+      const response = await fetch(fileUrls[i]);
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      archive.append(buffer, { name: `file${i + 1}${getExtension(fileUrls[i])}` });
+    } catch (e) {
+      console.log("Failed to fetch: " + fileUrls[i]);
+    }
   }
 
   archive.finalize();
